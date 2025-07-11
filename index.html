@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#2C7865" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description"
+      content="StudyDock Frontend Starter.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://invoicemaker-eosin.vercel.app/">
+    <meta property="og:title" content="StudyDock Frontend Starter">
+    <meta property="og:description"
+      content="StudyDock Frontend Starter.">
+    <meta property="og:image" content="https://invoicemaker-eosin.vercel.app/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_GH">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://invoicemaker-eosin.vercel.app/">
+    <meta name="twitter:title" content="StudyDock Frontend Starter">
+    <meta name="twitter:description"
+      content="StudyDock Frontend Starter">
+    <meta name="twitter:image" content="https://invoicemaker-eosin.vercel.app/og-image.jpg">
+    <meta name="twitter:image:alt" content="StudyDock Frontend Starter">
+
+
+
+    <!-- Preconnect to critical domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+
+    <!-- Enable PWA capabilities -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Optimize text rendering -->
+    <meta name="text-size-adjust" content="100%" />
+
+    <!-- Disable automatic phone number detection for better performance -->
+    <meta name="format-detection" content="telephone=no" />
+
+    <title>StudyDock App</title>
+
+    <!-- Add critical CSS inline for faster first paint -->
+    <style>
+      /* Add loading state styles */
+      #app:empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: #f9fafb;
+      }
+      #app:empty::before {
+        content: 'Loading...';
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        color: #1f3a8a;
+      }
+      /* Add system font fallbacks */
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          Oxygen,
+          Ubuntu,
+          Cantarell,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Add noscript message for users without JavaScript -->
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: system-ui, sans-serif">
+        Please enable JavaScript to use this application.
+      </div>
+    </noscript>
+
+    <div id="app"></div>
+
+    <!-- Add connection status indicator for instant feedback -->
+    <script>
+      window.addEventListener('offline', () => {
+        document.body.classList.add('is-offline')
+      })
+      window.addEventListener('online', () => {
+        document.body.classList.remove('is-offline')
+      })
+    </script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

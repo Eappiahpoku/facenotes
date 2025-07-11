@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - StudyDock App</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background-color: #f9fafb;
+        color: #1f2937;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+      }
+      .container {
+        max-width: 400px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+      .icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+      .title {
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0 0 12px;
+        color: #1f3a8a;
+      }
+      .message {
+        font-size: 16px;
+        line-height: 1.5;
+        margin: 0 0 20px;
+        color: #4b5563;
+      }
+      .tip {
+        font-size: 14px;
+        color: #6b7280;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📡</div>
+      <h1 class="title">You're Offline</h1>
+      <p class="message">
+        No internet connection available. Some features may be limited until you're back online.
+      </p>
+      <p class="tip">Don't worry! Your data is safely stored and will sync when you reconnect.</p>
+    </div>
+  </body>
+</html>
