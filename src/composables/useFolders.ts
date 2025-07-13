@@ -107,6 +107,33 @@ async function deleteFolder(id: string): Promise<void> {
  * ===== [New Feature] END =====
  */
 
+/**
+ * ===== [New Feature] START =====
+ * Renames a folder by id.
+ * @param id string - The folder's id
+ * @param newName string - The new folder name
+ */
+function renameFolder(id: string, newName: string): void {
+  // Find the folder and update its name
+  const folder = folders.value.find(f => f.id === id)
+  if (folder) {
+    folder.name = newName
+    // Optionally update updatedAt timestamp
+    folder.updatedAt = new Date().toISOString()
+    // Persist to storage for offline support
+    saveFolders()
+  }
+}
+// ===== [New Feature] END =====
+
+/*
+  ===== Educational Notes =====
+  - All folder changes are now persistent and offline-first.
+  - Error messages are simple and clear for Ghanaian users.
+  - No seeded/mock data: folders start empty unless user creates them.
+  - This file can be copy-pasted as a whole and will work if offlineStorage.ts is present.
+*/
+
 // ===== Initialization Pattern =====
 let initialized = false
 export function useFolder() {
@@ -121,14 +148,7 @@ export function useFolder() {
     addFolder,
     selectFolder,
     deleteFolder, // ===== [New Feature] Exported for deletion support =====
-    loadFolders // Exported in case manual reload is needed
+    loadFolders, // Exported in case manual reload is needed
+    renameFolder // ===== [New Feature] Exported for rename support =====
   }
 }
-
-/*
-  ===== Educational Notes =====
-  - All folder changes are now persistent and offline-first.
-  - Error messages are simple and clear for Ghanaian users.
-  - No seeded/mock data: folders start empty unless user creates them.
-  - This file can be copy-pasted as a whole and will work if offlineStorage.ts is present.
-*/

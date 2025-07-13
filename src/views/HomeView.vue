@@ -2,13 +2,13 @@
   filepath: src/views/HomeView.vue
 
   HomeView.vue
-  StudyDock Notes App - FIXED: Mobile note editing in full-screen mode
-  --------------------------------------------------------------------
-  - FIXED: Mobile notes now open in full-screen editor when clicked
-  - FIXED: Seamless transition between note list and editor on mobile
-  - FIXED: Back button to return to notes list
-  - FIXED: TypeScript error with noteId prop type
+  StudyDock Notes App - Mobile note editing, folder rename (edit) feature
+  -----------------------------------------------------------------------
+  - Mobile notes open in full-screen editor when clicked
+  - Seamless transition between note list and editor on mobile
+  - Back button to return to notes list
   - Ghana mobile-first, touch-friendly, and offline-first
+  - [Edit Feature]: Rename folders with a modal dialog
 -->
 
 <template>
@@ -33,10 +33,7 @@
         </div>
         <!-- Full-Screen Editor -->
         <div class="flex-1 overflow-hidden">
-          <!-- ===== [Error Fix] START ===== -->
-          <!-- Fix: Use selectedNoteId directly since it's already checked to be non-null -->
           <NoteEditor :note-id="selectedNoteId" />
-          <!-- ===== [Error Fix] END ===== -->
         </div>
       </div>
       <!-- ===== [New Feature] END ===== -->
@@ -77,22 +74,35 @@
                 </div>
                 <div class="text-primary"></div>
               </button>
-              <!-- ===== [Delete Feature] START ===== -->
-              <!-- ===== [Delete Button Visibility Fix] START ===== -->
-              <!-- On mobile, always show delete button (opacity-100, no hover/focus needed) -->
-              <button
-                @click.stop="openDeleteModal('folder', folder.id)"
-                class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white rounded-full w-9 h-9 flex items-center justify-center shadow transition-opacity duration-200 opacity-100"
-                aria-label="Delete folder"
-                tabindex="0"
-              >
-                <!-- Simple trash icon SVG -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
-                </svg>
-              </button>
-              <!-- ===== [Delete Button Visibility Fix] END ===== -->
-              <!-- ===== [Delete Feature] END ===== -->
+              <!-- ===== [Edit | Delete Feature] START ===== -->
+              <!-- Edit and Delete buttons always visible on mobile -->
+              <div class="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
+                <!-- Edit (Rename) Button -->
+                <button
+                  @click.stop="openRenameModal(folder)"
+                  class="bg-gray-200 hover:bg-primary hover:text-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow transition-colors"
+                  aria-label="Rename folder"
+                  tabindex="0"
+                >
+                  <!-- Pencil/Edit icon SVG -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-6 6h6v-2a2 2 0 012-2h2a2 2 0 012 2v2h6" />
+                  </svg>
+                </button>
+                <!-- Delete Button -->
+                <button
+                  @click.stop="openDeleteModal('folder', folder.id)"
+                  class="bg-red-500 hover:bg-red-600 text-white rounded-full w-9 h-9 flex items-center justify-center shadow transition-opacity duration-200"
+                  aria-label="Delete folder"
+                  tabindex="0"
+                >
+                  <!-- Trash icon SVG -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
+                  </svg>
+                </button>
+              </div>
+              <!-- ===== [Edit | Delete Feature] END ===== -->
             </div>
             <!-- Empty state -->
             <div v-if="folders.length === 0" class="text-center text-gray-400 py-8">
@@ -102,11 +112,11 @@
           
           <!-- Show notes for selected folder -->
           <div v-else>
+            <!-- ===== [Redundant Notes Heading Fix] START ===== -->
             <h3 class="text-lg font-semibold mb-4">
-              {{ selectedFolder?.name }} Notes
+              {{ selectedFolder?.name === 'Notes' ? 'Notes' : (selectedFolder?.name + ' Notes') }}
             </h3>
-            <!-- ===== [New Feature] START ===== -->
-            <!-- Mobile Notes List - clickable to open editor -->
+            <!-- ===== [Redundant Notes Heading Fix] END ===== -->
             <div v-if="folderNotes.length > 0" class="space-y-3">
               <div
                 v-for="note in folderNotes"
@@ -128,9 +138,7 @@
                     </div>
                   </div>
                 </button>
-                <!-- ===== [Delete Feature] START ===== -->
-                <!-- ===== [Delete Button Visibility Fix] START ===== -->
-                <!-- On mobile, always show delete button (opacity-100, no hover/focus needed) -->
+                <!-- Delete Button for notes (mobile: always visible) -->
                 <button
                   @click.stop="openDeleteModal('note', note.id)"
                   class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white rounded-full w-9 h-9 flex items-center justify-center shadow transition-opacity duration-200 opacity-100"
@@ -141,11 +149,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
                   </svg>
                 </button>
-                <!-- ===== [Delete Button Visibility Fix] END ===== -->
-                <!-- ===== [Delete Feature] END ===== -->
               </div>
             </div>
-            <!-- ===== [New Feature] END ===== -->
             <!-- Empty state for folder notes -->
             <div v-else class="text-center text-gray-400 py-8">
               No notes in this folder yet. Tap "Add Note" to create one.
@@ -204,21 +209,32 @@
                 <div class="text-xs opacity-75">{{ folder.noteCount }} notes</div>
               </div>
             </button>
-            <!-- ===== [Delete Feature] START ===== -->
-            <!-- ===== [Delete Button Visibility Fix] START ===== -->
-            <!-- On desktop, only show delete button on hover/focus (opacity-0 by default, group-hover:opacity-100) -->
-            <button
-              @click.stop="openDeleteModal('folder', folder.id)"
-              class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white rounded-full w-9 h-9 flex items-center justify-center shadow transition-opacity duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100"
-              aria-label="Delete folder"
-              tabindex="0"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
-              </svg>
-            </button>
-            <!-- ===== [Delete Button Visibility Fix] END ===== -->
-            <!-- ===== [Delete Feature] END ===== -->
+            <!-- ===== [Edit | Delete Feature] START ===== -->
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-200">
+              <!-- Edit (Rename) Button -->
+              <button
+                @click.stop="openRenameModal(folder)"
+                class="bg-gray-200 hover:bg-primary hover:text-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center shadow transition-colors"
+                aria-label="Rename folder"
+                tabindex="0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-6 6h6v-2a2 2 0 012-2h2a2 2 0 012 2v2h6" />
+                </svg>
+              </button>
+              <!-- Delete Button -->
+              <button
+                @click.stop="openDeleteModal('folder', folder.id)"
+                class="bg-red-500 hover:bg-red-600 text-white rounded-full w-9 h-9 flex items-center justify-center shadow transition-opacity duration-200"
+                aria-label="Delete folder"
+                tabindex="0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
+                </svg>
+              </button>
+            </div>
+            <!-- ===== [Edit | Delete Feature] END ===== -->
           </div>
           <!-- Empty state -->
           <div v-if="folders.length === 0" class="text-center text-gray-400 py-8">
@@ -249,8 +265,6 @@
           </button>
         </div>
         <div class="flex-1 overflow-y-auto p-4">
-          <!-- ===== [New Feature] START ===== -->
-          <!-- Desktop Notes List - clickable to select note -->
           <div v-if="selectedFolderId">
             <div v-if="folderNotes.length > 0" class="space-y-3">
               <div
@@ -271,9 +285,7 @@
                     Updated: {{ formatDate(note.updatedAt) }}
                   </div>
                 </button>
-                <!-- ===== [Delete Feature] START ===== -->
-                <!-- ===== [Delete Button Visibility Fix] START ===== -->
-                <!-- On desktop, only show delete button on hover/focus (opacity-0 by default, group-hover:opacity-100) -->
+                <!-- Delete Button for notes (desktop: show on hover/focus) -->
                 <button
                   @click.stop="openDeleteModal('note', note.id)"
                   class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white rounded-full w-9 h-9 flex items-center justify-center shadow transition-opacity duration-200 opacity-0 group-hover:opacity-100 focus:opacity-100"
@@ -284,8 +296,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m2 0v12a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z" />
                   </svg>
                 </button>
-                <!-- ===== [Delete Button Visibility Fix] END ===== -->
-                <!-- ===== [Delete Feature] END ===== -->
               </div>
             </div>
             <!-- Empty state for folder notes -->
@@ -297,13 +307,10 @@
           <div v-else class="text-center text-gray-400 py-8">
             Select a folder to view its notes.
           </div>
-          <!-- ===== [New Feature] END ===== -->
         </div>
       </div>
-    <!-- Right Panel: Editor -->
+      <!-- Right Panel: Editor -->
       <div class="flex-1 bg-white flex flex-col">
-        <!-- ===== [Error Fix] START ===== -->
-        <!-- Fix: Only render NoteEditor when selectedNoteId is not null -->
         <NoteEditor v-if="selectedNoteId" :note-id="selectedNoteId" />
         <div v-else class="flex-1 flex items-center justify-center text-gray-400">
           <div class="text-center">
@@ -312,7 +319,6 @@
             <p class="text-sm">Choose a note from the list to start editing</p>
           </div>
         </div>
-        <!-- ===== [Error Fix] END ===== -->
       </div>
     </div>
   </div>
@@ -323,6 +329,63 @@
     @add="handleAddFolder"
     @cancel="showAddFolderModal = false"
   />
+
+  <!-- ===== [Rename Modal] START ===== -->
+  <!-- Modal for renaming a folder -->
+  <div
+    v-if="renameModal.open"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+    aria-modal="true"
+    role="dialog"
+  >
+    <form
+      @submit.prevent="confirmRename"
+      class="bg-white rounded-lg shadow-lg w-11/12 max-w-sm mx-auto p-6 flex flex-col gap-4"
+    >
+      <div class="flex items-center gap-3">
+        <div class="bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center">
+          <!-- Pencil/Edit icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-2.828 0L9 13zm-6 6h6v-2a2 2 0 012-2h2a2 2 0 012 2v2h6" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-semibold text-lg text-gray-900">
+            Rename Folder
+          </h3>
+        </div>
+      </div>
+      <label class="text-sm text-gray-700 font-medium" for="rename-folder-input">
+        New folder name
+      </label>
+      <input
+        id="rename-folder-input"
+        v-model="renameModal.name"
+        type="text"
+        class="w-full px-3 py-3 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 text-base bg-white shadow-sm"
+        required
+        maxlength="50"
+        autocomplete="off"
+        placeholder="Enter new folder name"
+      />
+      <div class="flex gap-3 mt-2">
+        <button
+          type="submit"
+          class="flex-1 h-12 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium transition-colors"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          @click="closeRenameModal"
+          class="flex-1 h-12 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+  <!-- ===== [Rename Modal] END ===== -->
 
   <!-- ===== [Delete Modal] START ===== -->
   <!-- Custom Delete Confirmation Modal (replaces browser confirm) -->
@@ -373,29 +436,70 @@
 import SearchBar from '@/components/layout/SearchBar.vue'
 import NoteEditor from '@/components/layout/NoteEditor.vue'
 import AddFolderModal from '@/components/layout/AddFolderModal.vue'
-// ===== State & Logic =====
 import { ref, computed } from 'vue'
 import { useFolder } from '@/composables/useFolders'
 import { useNotes } from '@/composables/useNotes'
 import { useToast } from '@/composables/useToast'
 
-const { folders, selectedFolderId, addFolder, selectFolder, deleteFolder } = useFolder()
+// ===== State & Logic =====
+const { folders, selectedFolderId, addFolder, selectFolder, deleteFolder, renameFolder } = useFolder()
 const { notes, addNote, deleteNote } = useNotes()
 const { success, error } = useToast()
 
 const showAddFolderModal = ref(false)
 const isAddingNote = ref(false)
-// ===== [New Feature] START ===== 
 const selectedNoteId = ref<string | null>(null)
-// ===== [New Feature] END =====
+
+// ===== [Rename Modal State] START =====
+/**
+ * Modal state for renaming a folder.
+ * - open: whether modal is visible
+ * - id: id of the folder to rename
+ * - name: new name (input)
+ */
+const renameModal = ref<{
+  open: boolean
+  id: string | null
+  name: string
+}>({
+  open: false,
+  id: null,
+  name: ''
+})
+
+/**
+ * Opens the rename modal for a folder.
+ * @param folder Folder object
+ */
+function openRenameModal(folder: { id: string; name: string }) {
+  renameModal.value.open = true
+  renameModal.value.id = folder.id
+  renameModal.value.name = folder.name
+}
+
+/**
+ * Closes the rename modal.
+ */
+function closeRenameModal() {
+  renameModal.value.open = false
+  renameModal.value.id = null
+  renameModal.value.name = ''
+}
+
+/**
+ * Handles confirming the rename action from the modal.
+ * Calls the renameFolder composable.
+ */
+function confirmRename() {
+  if (renameModal.value.id && renameModal.value.name.trim()) {
+    renameFolder(renameModal.value.id, renameModal.value.name.trim())
+    success('Folder renamed successfully!')
+  }
+  closeRenameModal()
+}
+// ===== [Rename Modal State] END =====
 
 // ===== [Delete Modal] START =====
-/**
- * Modal state for delete confirmation.
- * - open: whether modal is visible
- * - type: 'note' or 'folder'
- * - id: id of the note/folder to delete
- */
 const deleteModal = ref<{
   open: boolean
   type: 'note' | 'folder' | null
@@ -406,30 +510,18 @@ const deleteModal = ref<{
   id: null
 })
 
-/**
- * Opens the delete modal for a note or folder.
- * @param type 'note' or 'folder'
- * @param id string
- */
 function openDeleteModal(type: 'note' | 'folder', id: string) {
   deleteModal.value.open = true
   deleteModal.value.type = type
   deleteModal.value.id = id
 }
 
-/**
- * Closes the delete modal.
- */
 function closeDeleteModal() {
   deleteModal.value.open = false
   deleteModal.value.type = null
   deleteModal.value.id = null
 }
 
-/**
- * Handles confirming the delete action from the modal.
- * Calls the appropriate delete handler.
- */
 function confirmDelete() {
   if (deleteModal.value.type === 'note' && deleteModal.value.id) {
     handleDeleteNote(deleteModal.value.id)
@@ -452,36 +544,24 @@ const folderNotes = computed(() =>
 )
 
 // ===== Methods =====
-/**
- * Handles adding a new folder and closes the modal.
- */
 function handleAddFolder(name: string) {
   addFolder(name)
   showAddFolderModal.value = false
   success('Folder created successfully!')
 }
 
-/**
- * Handles adding a new note to the selected folder (or default folder).
- */
 async function handleAddNote() {
   isAddingNote.value = true
-  
   try {
     const title = 'New Note'
     const content = 'Start writing your note here...'
-    
     let targetFolderId = selectedFolderId.value
-    
     if (!targetFolderId && folders.value.length > 0) {
       targetFolderId = folders.value[0].id
       selectFolder(targetFolderId)
     }
-    
     await addNote(title, content, targetFolderId || undefined)
-    
     success('Note created successfully!')
-    
   } catch (err) {
     error('Failed to create note. Please try again.')
     console.error('Error creating note:', err)
@@ -489,20 +569,12 @@ async function handleAddNote() {
     isAddingNote.value = false
   }
 }
-// ===== [Fix] START =====
-/**
- * Handles folder selection and clears selected note
- * FIXED: Now clears the editor when switching folders
- */
+
 function handleFolderSelection(folderId: string | null) {
   selectFolder(folderId)
-  selectedNoteId.value = null // Clear selected note when switching folders
+  selectedNoteId.value = null
 }
-// ===== [Fix] END =====
 
-/**
- * Formats a date string for display.
- */
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('en-GH', {
     year: 'numeric',
@@ -513,46 +585,28 @@ function formatDate(dateString: string): string {
   })
 }
 
-// ===== [Delete Feature] START =====
-/**
- * Handles deleting a note by id.
- * No confirm dialog here; handled by modal.
- */
 function handleDeleteNote(noteId: string) {
   deleteNote(noteId)
   success('Note deleted.')
-  // If the deleted note was open, close the editor
   if (selectedNoteId.value === noteId) {
     selectedNoteId.value = null
   }
 }
 
-/**
- * Handles deleting a folder by id.
- * No confirm dialog here; handled by modal.
- */
 function handleDeleteFolder(folderId: string) {
   deleteFolder(folderId)
   success('Folder deleted.')
-  // If the deleted folder was selected, clear selection
   if (selectedFolderId.value === folderId) {
     selectFolder(null)
     selectedNoteId.value = null
   }
 }
-// ===== [Delete Feature] END =====
 </script>
 
 <!--
   ===== Styling & Documentation Notes =====
-  - FIXED: Mobile notes now open in full-screen editor when clicked
-  - FIXED: Seamless transition between note list and editor on mobile
-  - FIXED: Back button to return to notes list from editor
-  - FIXED: Desktop notes also clickable to select for editing
-  - FIXED: TypeScript error with noteId prop type mismatch
-  - Ghana mobile-first, touch-friendly, and offline-first
+  - [Edit | Delete Feature]: Edit (rename) and delete buttons for folders, mobile and desktop
+  - [Rename Modal]: Simple modal for renaming folders, mobile-first, accessible
   - All code is modular, maintainable, and well-commented for learning
-  - [Delete Feature]: Delete button appears on hover/focus for each note/folder, touch-friendly, with confirmation dialog
-  - [Delete Modal]: Custom modal for delete confirmation, accessible and mobile-first
-  - [Delete Button Visibility Fix]: Delete button always visible on mobile, hover/focus on desktop
 -->
+  

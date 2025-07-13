@@ -46,6 +46,7 @@
     <FolderCard
       v-for="folder in folders"
       :key="folder.id"
+      :id="folder.id"
       :name="folder.name"
       :note-count="folder.noteCount"
       :updated-at="folder.updatedAt"
