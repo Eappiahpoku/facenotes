@@ -2,11 +2,11 @@
   filepath: src/components/layout/NoteEditor.vue
 
   NoteEditor.vue
-  StudyDock Notes App - Note Editor with Save/Load Functionality (FIXED: No duplicate notes)
-  -----------------------------------------------------------------------------------------
-  - FIXED: No longer creates duplicate notes after saving
-  - FIXED: Editor remains with saved content after successful save
-  - FIXED: User can manually clear editor when they want a new note
+  StudyDock Notes App - FIXED: Proper save/update logic (No duplicate notes)
+  -------------------------------------------------------------------------
+  - FIXED: Now properly updates existing notes instead of creating duplicates
+  - FIXED: Only creates new notes when actually creating a new note
+  - FIXED: Clear distinction between editing and creating modes
   - Ghana mobile-first, touch-friendly, and offline-first
   - All code is fully copy-pasteable and documented for learning
 -->
@@ -100,7 +100,7 @@
     <div class="lg:hidden border-t border-gray-200 p-4 bg-gray-50">
       <div class="flex items-center justify-between">
         <div class="text-sm text-gray-600">
-          {{ saveStatus === 'saved' ? 'Note saved successfully' : 'Creating new note' }}
+          {{ saveStatus === 'saved' ? 'Note saved successfully' : (currentNote ? 'Editing note' : 'Creating new note') }}
         </div>
         <div class="flex gap-2">
           <!-- Quick save button for mobile -->
@@ -143,7 +143,7 @@ interface Props {
 const props = defineProps<Props>()
 
 // ===== State & Composables =====
-const { notes, addNote } = useNotes()
+const { notes, addNote, updateNote } = useNotes() // ===== [New Feature] Import updateNote =====
 const { selectedFolderId } = useFolder()
 const { success, error } = useToast()
 
@@ -183,8 +183,7 @@ const saveStatusText = computed(() => {
 
 // ===== Methods =====
 /**
- * Handles saving the note (create new or update existing)
- * FIXED: No longer automatically creates a new note after saving
+ * Handles saving the note - FIXED: Now properly distinguishes between create and update
  */
 async function handleSave() {
   if (!noteTitle.value.trim() && !noteContent.value.trim()) {
@@ -197,22 +196,28 @@ async function handleSave() {
 
   try {
     // ===== [FIXED] START =====
-    // Create the note with the current content
     const title = noteTitle.value.trim() || 'Untitled Note'
     const content = noteContent.value.trim()
     
-    // Use the selected folder ID or let addNote create a default folder
-    await addNote(title, content, selectedFolderId.value || undefined)
+    if (currentNote.value) {
+      // FIXED: Update existing note instead of creating a new one
+      await updateNote(currentNote.value.id, title, content)
+      success('Note updated successfully!')
+    } else {
+      // Create new note only when there's no current note
+      await addNote(title, content, selectedFolderId.value || undefined)
+      success('Note created successfully!')
+      
+      // Optional: You could emit an event here to notify parent component
+      // that a new note was created, so it can update the selected noteId
+      // emit('noteCreated', newNote)
+    }
     
     // Update last saved state to match current content
     lastSavedTitle.value = noteTitle.value
     lastSavedContent.value = noteContent.value
     
     saveStatus.value = 'saved'
-    success('Note saved successfully!')
-    
-    // FIXED: Do NOT automatically clear the editor
-    // Let the user manually start a new note if they want to
     // ===== [FIXED] END =====
     
   } catch (err) {
@@ -226,7 +231,6 @@ async function handleSave() {
 
 /**
  * Handles clearing the editor to start a new note
- * FIXED: Now only clears when user explicitly wants a new note
  */
 function handleClear() {
   noteTitle.value = ''
@@ -319,7 +323,6 @@ watch(currentNote, (newNote) => {
   }
 })
 
-// ===== [FIXED] START =====
 // Reset save status after a delay (but don't clear editor)
 watch(saveStatus, (newStatus) => {
   if (newStatus === 'saved') {
@@ -330,14 +333,13 @@ watch(saveStatus, (newStatus) => {
     }, 3000) // Show "Saved" for 3 seconds
   }
 })
-// ===== [FIXED] END =====
 </script>
 
 <!--
   ===== Styling & Documentation Notes =====
-  - FIXED: No longer creates duplicate notes after saving
-  - FIXED: Editor keeps content after save, user can manually clear for new note
-  - FIXED: Clear button now labeled "New Note" for clarity
+  - FIXED: Now properly updates existing notes instead of creating duplicates
+  - FIXED: Only creates new notes when actually creating a new note
+  - FIXED: Clear distinction between editing and creating modes
   - Ghana mobile-first, touch-friendly, and offline-first
   - All code is modular, maintainable, and well-commented for learning
   - Keyboard shortcuts: Ctrl+S (save), Ctrl+N (new/clear)

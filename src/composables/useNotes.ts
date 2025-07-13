@@ -1,18 +1,15 @@
 /**
  * useNotes.ts
- * StudyDock Notes App - Notes State Composable (Notes-in-Folder + Default Folder)
- * ------------------------------------------------------------------------------
- * - Allows creating notes inside a specific folder.
- * - If no folder is specified, uses/creates a default "Notes" folder.
- * - Notes and folders are persisted offline.
- * - Ghana mobile-first, clear comments, and maintainable.
+ * StudyDock Notes App - Notes State Composable (LocalForage persistence, minimal/focused)
+ * -----------------------------------------------------------------------------
+ * - All note operations now persist to LocalForage immediately
+ * - Data loads from LocalForage on app startup
+ * - Ghana mobile-first: designed for offline-first usage
+ * - All operations are logged for debugging and learning
+ * - Folder note counts are updated directly (no missing helpers)
  */
 
 // ===== Types & Interfaces =====
-
-/**
- * Represents a single note in the StudyDock Notes App.
- */
 export interface Note {
   id: string           // Unique identifier for the note
   title: string        // Note title (short, clear)
@@ -22,109 +19,90 @@ export interface Note {
 }
 
 // ===== Imports & Config =====
-
 import { ref } from 'vue'
 import { getItem, setItem } from '@/utils/offlineStorage'
 import { useFolder } from '@/composables/useFolders'
 
-// ===== Constants & Mock Data =====
-
-/**
- * Storage key for offline persistence.
- */
+// ===== Constants =====
 const STORAGE_KEY = 'studydock-notes'
-
-/**
- * Default folder name for notes without a folder.
- */
 const DEFAULT_FOLDER_NAME = 'Notes'
 
-/**
- * Static mock notes for initial UI rendering.
- */
-const mockNotes: Note[] = [
-  {
-    id: '1',
-    title: 'Welcome to StudyDock',
-    content: 'This is your first note. You can edit or delete it anytime.',
-    folderId: 'default',
-    updatedAt: '2025-07-11T09:00:00Z'
-  }
-]
-
 // ===== Singleton State =====
-
 const notes = ref<Note[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
-let initialized = false // Prevents multiple initializations
+let initialized = false
 
 // ===== Helper Functions =====
 
 /**
- * Loads notes from offline storage or initializes with mock data.
+ * Loads notes from LocalForage or initializes with an empty array
+ * If no notes exist, starts with an empty array (no mock data).
  */
 async function loadNotes() {
   isLoading.value = true
+  console.log('📝 Loading notes from LocalForage...')
+  
   try {
     const stored = await getItem<Note[]>(STORAGE_KEY)
     if (stored && Array.isArray(stored)) {
       notes.value = stored
+      console.log(`📝 Loaded ${stored.length} notes from LocalForage`)
     } else {
-      notes.value = mockNotes
-      await setItem(STORAGE_KEY, mockNotes)
+      // ===== [Change] START =====
+      // Start with an empty array if no notes exist
+      notes.value = []
+      await setItem(STORAGE_KEY, [])
+      console.log('📝 Initialized with empty notes array in LocalForage')
+      // ===== [Change] END =====
     }
     error.value = null
   } catch (e) {
     error.value = 'Could not load notes. Please try again.'
-    notes.value = mockNotes
+    notes.value = []
+    console.error('❌ Failed to load notes:', e)
   } finally {
     isLoading.value = false
   }
 }
 
 /**
- * Saves the current notes list to offline storage.
+ * Saves notes to LocalForage
+ * Persists the current notes array to offline storage.
  */
 async function saveNotes() {
   try {
     await setItem(STORAGE_KEY, notes.value)
+    console.log(`📝 Saved ${notes.value.length} notes to LocalForage`)
   } catch (e) {
     error.value = 'Could not save notes. Changes may not be saved offline.'
+    console.error('❌ Failed to save notes:', e)
   }
 }
 
 /**
- * Adds a new note to a folder (or default folder if none specified).
- * @param title - The note title (string)
- * @param content - The note content (string)
- * @param folderId - The folder ID (optional)
+ * Adds a new note and immediately saves to LocalForage
+ * Also updates the folder's noteCount directly.
+ * @param title - Note title
+ * @param content - Note content
+ * @param folderId - Optional folder ID
  */
-async function addNote(
-  title: string,
-  content: string,
-  folderId?: string
-) {
-  // ===== [New Feature] START =====
-  // Use the folders composable to ensure the folder exists
+async function addNote(title: string, content: string, folderId?: string) {
   const { folders, addFolder } = useFolder()
 
   let targetFolderId = folderId
 
-  // If no folderId is provided, use or create the default folder
+  // If no folderId provided, use or create default folder
   if (!targetFolderId) {
-    // Try to find the default folder
     let defaultFolder = folders.value.find(f => f.name === DEFAULT_FOLDER_NAME)
     if (!defaultFolder) {
-      // Create the default folder if it doesn't exist
       await addFolder(DEFAULT_FOLDER_NAME)
-      // Wait for folders to update
       defaultFolder = folders.value.find(f => f.name === DEFAULT_FOLDER_NAME)
     }
     targetFolderId = defaultFolder ? defaultFolder.id : 'default'
   }
 
-  // Create the new note object
+  // Create new note
   const newNote: Note = {
     id: `n${Date.now()}${Math.floor(Math.random() * 1000)}`,
     title: title.trim() || 'Untitled Note',
@@ -133,27 +111,94 @@ async function addNote(
     updatedAt: new Date().toISOString()
   }
 
-  // Add the new note to the top of the list
+  // Add to notes array and save
   notes.value.unshift(newNote)
   await saveNotes()
+
+  // ===== [New Feature] START =====
+  // Update folder note count directly
+  const folder = folders.value.find(f => f.id === targetFolderId)
+  if (folder) {
+    folder.noteCount += 1
+  }
   // ===== [New Feature] END =====
+
+  console.log(`📝 Added new note: ${title}`)
+  return newNote
 }
 
-// ===== Main Logic (Singleton Composable) =====
+/**
+ * Updates an existing note and immediately saves to LocalForage
+ * @param noteId - Note ID
+ * @param title - New title
+ * @param content - New content
+ */
+async function updateNote(noteId: string, title: string, content: string) {
+  const noteIndex = notes.value.findIndex(note => note.id === noteId)
+  
+  if (noteIndex === -1) {
+    throw new Error('Note not found')
+  }
+
+  // Update note
+  notes.value[noteIndex] = {
+    ...notes.value[noteIndex],
+    title: title.trim() || 'Untitled Note',
+    content: content.trim(),
+    updatedAt: new Date().toISOString()
+  }
+
+  await saveNotes()
+  console.log(`📝 Updated note: ${title}`)
+  return notes.value[noteIndex]
+}
 
 /**
- * useNotes composable (singleton)
- * - Returns the singleton notes state and addNote function.
- * - Loads notes from offline storage only once.
+ * Deletes a note and immediately saves to LocalForage
+ * Also updates the folder's noteCount directly.
+ * @param noteId - Note ID to delete
+ */
+async function deleteNote(noteId: string) {
+  const noteIndex = notes.value.findIndex(note => note.id === noteId)
+  
+  if (noteIndex === -1) {
+    throw new Error('Note not found')
+  }
+
+  const note = notes.value[noteIndex]
+  // Remove note from array
+  notes.value.splice(noteIndex, 1)
+  await saveNotes()
+
+  // ===== [New Feature] START =====
+  // Update folder note count directly
+  const { folders } = useFolder()
+  const folder = folders.value.find(f => f.id === note.folderId)
+  if (folder && folder.noteCount > 0) {
+    folder.noteCount -= 1
+  }
+  // ===== [New Feature] END =====
+
+  console.log(`📝 Deleted note: ${note.title}`)
+}
+
+// ===== Main Composable =====
+
+/**
+ * useNotes composable - manages notes state with LocalForage persistence
+ * Loads notes from storage on first use.
  */
 export function useNotes() {
   if (!initialized) {
     initialized = true
     loadNotes()
   }
+  
   return {
     notes,
     addNote,
+    updateNote,
+    deleteNote,
     isLoading,
     error
   }
@@ -161,8 +206,10 @@ export function useNotes() {
 
 /*
   ===== Educational Notes =====
-  - This composable uses the singleton pattern for shared state.
-  - Notes are loaded from and saved to offline storage.
-  - All notes are associated with a folder (default if none specified).
-  - Ghana mobile-first, offline-first, and maintainable.
+  - All note operations now persist to LocalForage immediately
+  - Data loads from LocalForage on app startup
+  - Folder note counts are updated directly when notes are added/removed
+  - Console logging helps with debugging during development
+  - Singleton pattern ensures consistent state across components
+  - Ghana mobile-first: optimized for offline-first usage
 */

@@ -1,165 +1,134 @@
 /**
- * useFolders.ts
- * StudyDock Notes App - Folders State Composable (Fixed Singleton + Persistence)
- * ------------------------------------------------------------------------------
- * - FIXED: Singleton pattern ensures only one folders state exists app-wide
- * - FIXED: Loads and saves folders using offlineStorage.ts (localForage)
- * - FIXED: selectFolder now accepts null for deselecting folders
- * - Ghana mobile-first: designed for offline-first, low-bandwidth, and touch-friendly UX
- * - All types and state are documented for learning and maintainability
+ * useFolders composable
+ * Handles folder state, selection, creation, and deletion for StudyDock Notes.
+ * Ghana mobile-first, offline-first, and simple error handling.
+ *
+ * ===== [New Feature] START =====
+ * - Now persists folders using LocalForage (offlineStorage.ts)
+ * - Loads folders from offline storage on startup
+ * - All CRUD operations update offline storage
+ * - [Change] Removed all seeded/mock folder data. App starts with empty folders.
+ * ===== [New Feature] END =====
  */
-
-// ===== Types & Interfaces =====
-
-/**
- * Represents a single folder in the StudyDock Notes App.
- */
-export interface Folder {
-  id: string           // Unique identifier for the folder
-  name: string         // Folder name (short, clear)
-  noteCount: number    // Number of notes in this folder
-  updatedAt: string    // ISO date string for last update
-}
-
-// ===== Imports & Config =====
 
 import { ref } from 'vue'
-import { getItem, setItem } from '@/utils/offlineStorage'
+import { setItem, getItem } from '@/utils/offlineStorage' // Import LocalForage helpers
 
-// ===== Constants & Mock Data =====
+// ===== Types & Interfaces =====
+export interface Folder {
+  id: string
+  name: string
+  noteCount: number
+  updatedAt: string
+}
 
-/**
- * Storage key for offline persistence.
- */
-const STORAGE_KEY = 'studydock-folders'
+// ===== Constants & Config =====
+const FOLDERS_KEY = 'folders' // Storage key for all folders
 
-/**
- * Static mock folders for initial UI rendering.
- * - Ghana context: short, clear, mobile-friendly folder names.
- */
-const mockFolders: Folder[] = [
-  {
-    id: 'f1',
-    name: 'Personal',
-    noteCount: 3,
-    updatedAt: '2025-07-11T09:00:00Z'
-  },
-  {
-    id: 'f2',
-    name: 'Work',
-    noteCount: 5,
-    updatedAt: '2025-07-10T15:30:00Z'
-  },
-  {
-    id: 'f3',
-    name: 'Ideas',
-    noteCount: 2,
-    updatedAt: '2025-07-09T12:45:00Z'
-  }
-]
-
-// ===== Singleton State (FIXED) =====
-
-/**
- * Singleton state for folders, loading, and error.
- * This ensures all components share the same folders state.
- */
+// ===== State =====
 const folders = ref<Folder[]>([])
-const selectedFolderId = ref<string | null>(null) // Track selected folder
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-let initialized = false // Prevents multiple initializations
+const selectedFolderId = ref<string | null>(null)
+const isFoldersLoaded = ref(false) // Track if folders have been loaded
 
 // ===== Helper Functions =====
+function generateId(): string {
+  // Simple unique ID generator for demo purposes
+  return Math.random().toString(36).substr(2, 9)
+}
+
+// ===== Main Logic =====
 
 /**
- * Loads folders from offline storage or initializes with mock data.
+ * Loads folders from offline storage on startup.
+ * If no folders exist, initializes with an empty array.
+ * ===== [Change] START =====
+ * - Removed any mock/seeded folder data. Only loads from storage or starts empty.
+ * ===== [Change] END =====
  */
-async function loadFolders() {
-  if (initialized) return // Prevent multiple loads
-  
-  isLoading.value = true
+async function loadFolders(): Promise<void> {
   try {
-    const stored = await getItem<Folder[]>(STORAGE_KEY)
-    if (stored && Array.isArray(stored)) {
-      folders.value = stored
-    } else {
-      folders.value = [...mockFolders] // Use spread to avoid mutation
-      await setItem(STORAGE_KEY, folders.value)
-    }
-    error.value = null
-  } catch (e) {
-    error.value = 'Could not load folders. Please try again.'
-    folders.value = [...mockFolders]
-  } finally {
-    isLoading.value = false
-    initialized = true
+    const stored = await getItem<Folder[]>(FOLDERS_KEY)
+    folders.value = stored || []
+    isFoldersLoaded.value = true
+  } catch (err) {
+    // Simple error message for Ghanaian users
+    console.error('Could not load folders. Please reload the app.')
+    folders.value = []
+    isFoldersLoaded.value = true
   }
 }
 
 /**
- * Saves the current folders list to offline storage.
+ * Saves the current folders array to offline storage.
  */
-async function saveFolders() {
+async function saveFolders(): Promise<void> {
   try {
-    await setItem(STORAGE_KEY, folders.value)
-  } catch (e) {
-    error.value = 'Could not save folders. Changes may not be saved offline.'
+    await setItem(FOLDERS_KEY, folders.value)
+  } catch (err) {
+    // Simple error message for Ghanaian users
+    console.error('Could not save folders. Try again later.')
   }
 }
 
 /**
- * Adds a new folder to the folders list and persists it.
- * @param name - The name of the new folder (string)
+ * Add a new folder.
+ * @param name - Folder name
  */
-async function addFolder(name: string) {
-  const id = `f${Date.now()}${Math.floor(Math.random() * 1000)}`
-  const newFolder: Folder = {
-    id,
-    name: name.trim(),
+async function addFolder(name: string): Promise<void> {
+  folders.value.push({
+    id: generateId(),
+    name,
     noteCount: 0,
     updatedAt: new Date().toISOString()
-  }
-  folders.value.unshift(newFolder)
-  await saveFolders()
+  })
+  await saveFolders() // Persist change
 }
 
 /**
- * Selects a folder to view its notes, or deselects if null is passed.
- * @param folderId - The ID of the folder to select, or null to deselect
+ * Select a folder by ID.
+ * @param id - Folder ID or null to clear selection
  */
-function selectFolder(folderId: string | null) {
-  selectedFolderId.value = folderId
+function selectFolder(id: string | null): void {
+  selectedFolderId.value = id
 }
 
-// ===== Main Logic (Fixed Singleton Composable) =====
-
 /**
- * useFolder composable (singleton)
- * - Returns the singleton folders state and functions
- * - Automatically loads folders from offline storage
+ * ===== [New Feature] START =====
+ * Delete a folder by ID.
+ * @param id - Folder ID
+ * Removes the folder and (optionally) its notes.
  */
+async function deleteFolder(id: string): Promise<void> {
+  folders.value = folders.value.filter(folder => folder.id !== id)
+  await saveFolders() // Persist change
+  // Optionally: Remove notes belonging to this folder (handled in useNotes)
+}
+/**
+ * ===== [New Feature] END =====
+ */
+
+// ===== Initialization Pattern =====
+let initialized = false
 export function useFolder() {
-  // Load folders immediately if not already loaded
   if (!initialized) {
+    initialized = true
     loadFolders()
   }
-  
   return {
     folders,
     selectedFolderId,
+    isFoldersLoaded, // Useful for UI loading states
     addFolder,
     selectFolder,
-    isLoading,
-    error
+    deleteFolder, // ===== [New Feature] Exported for deletion support =====
+    loadFolders // Exported in case manual reload is needed
   }
 }
 
 /*
   ===== Educational Notes =====
-  - FIXED: This composable now properly uses the singleton pattern
-  - FIXED: Folders are loaded from and saved to offline storage correctly
-  - FIXED: selectFolder now accepts string | null for deselecting folders
-  - FIXED: All components using useFolder() will see the same folders list
-  - Ghana mobile-first, offline-first, and maintainable
+  - All folder changes are now persistent and offline-first.
+  - Error messages are simple and clear for Ghanaian users.
+  - No seeded/mock data: folders start empty unless user creates them.
+  - This file can be copy-pasted as a whole and will work if offlineStorage.ts is present.
 */
