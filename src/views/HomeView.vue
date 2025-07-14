@@ -12,7 +12,8 @@
 -->
 
 <template>
-  <!-- ===== MAIN CONTAINER ===== -->
+  
+<AppHeader />
   <div class="h-screen bg-gray-50 flex flex-col lg:flex-row overflow-hidden">
 
     <!-- ===== MOBILE LAYOUT (visible on small screens) ===== -->
@@ -433,6 +434,7 @@
 
 <script setup lang="ts">
 // ===== Imports =====
+import AppHeader from '@/components/layout/AppHeader.vue'
 import SearchBar from '@/components/layout/SearchBar.vue'
 import NoteEditor from '@/components/layout/NoteEditor.vue'
 import AddFolderModal from '@/components/layout/AddFolderModal.vue'

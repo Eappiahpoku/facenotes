@@ -43,7 +43,7 @@
       <!-- Contact Link with WhatsApp Integration -->
       <div class="mt-8 flex flex-col items-center md:items-start space-y-4">
         <a
-          href="https://www.edwardappiahpoku.com"
+          href="#"
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex items-center px-6 py-3 text-lg font-medium text-white bg-primary hover:bg-primary-dark rounded-full transition-colors duration-300 shadow-md hover:shadow-lg"
